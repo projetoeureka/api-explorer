@@ -4,12 +4,15 @@
   "version": "0.0.0.1",
   "manifest_version": 2,
   "app": {
-    "urls": [
-      "http://geekie.s3.amazonaws.com/api-explorer/"
-    ],
     "launch": {
-      "web_url": "http://geekie.s3.amazonaws.com/api-explorer/index.html"
+      "local_path": "index.html"
     }
   },
-  "icons": { "16": "calculator-16.png", "128": "calculator-128.png" }
+  "icons": { "32": "logo_32.png", "128": "logo_128.jpg" },
+  "permissions": [
+    "storage",
+    "cookies",
+    "http://*/*", 
+    "https://*/*"
+  ]
 }
