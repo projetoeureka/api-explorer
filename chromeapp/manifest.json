@@ -1,0 +1,15 @@
+{
+  "name": "Geekie API Explorer",
+  "description": "Chrome App for easily interacting with Geekie APIs",
+  "version": "0.0.0.1",
+  "manifest_version": 2,
+  "app": {
+    "urls": [
+      "http://geekie.s3.amazonaws.com/api-explorer/"
+    ],
+    "launch": {
+      "web_url": "http://geekie.s3.amazonaws.com/api-explorer/index.html"
+    }
+  },
+  "icons": { "16": "calculator-16.png", "128": "calculator-128.png" }
+}
