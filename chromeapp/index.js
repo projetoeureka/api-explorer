@@ -53,7 +53,18 @@ function main(storageInfo) {
   });
   
   editors.forEach(function(editor) {
-    editor.on("change", function saveServerState() {
+    editor.on("change", saveServerState);
+  });
+  
+  [inputBodyEditor, inputHttpEditor].forEach(function(editor) {
+    editor.on("change", function() {
+      if (window.maySaveServerState) {
+        inputAutoHeadersEditor.setValue("");
+      }
+    });
+  });
+  
+  function saveServerState() {
       if (window.maySaveServerState) {
         var info = {};
         info[serverSelect.getValue()] = {
@@ -61,14 +72,14 @@ function main(storageInfo) {
           inputBodyEditor: inputBodyEditor.getValue(),
           outputHttpEditor: outputHttpEditor.getValue(),
           outputBodyEditor: outputBodyEditor.getValue(),
-          inputAutoHeadersEditor: inputAutoHeadersEditor.getValue()
+          inputAutoHeadersEditor: inputAutoHeadersEditor.getValue(),
+          url: $(".selectize-container .editable-input").text()
         };
         storageInfo[serverSelect.getValue()] = info[serverSelect.getValue()];
         chrome.storage.local.set(info);
         console.log("wrote", serverSelect.getValue());
       }
-    });
-  });
+    }
   
   $("#input-editor").resizable({
     handles: "e",
@@ -134,11 +145,7 @@ function main(storageInfo) {
         return;
       }
       
-      $(".selectize-container .editable-input")
-        .empty()
-        .append($("<span class='method'>").text(url.split(" ")[0]))
-        .append("&nbsp;")
-        .append($("<span class='url'>").text(url.split(" ").slice(1).join(" ")));
+      setURL(url);
     },
     onDropdownOpen: function() {
       $(".selectize-container .noneditable-input").show();
@@ -151,18 +158,32 @@ function main(storageInfo) {
   });
   
   $(".selectize-container .editable-input").on("blur", function() {
-    var url = $.trim($(this).text().replace(" ", " "));
+    var url = $.trim($(this).text().replace("\xa0", " "));
     var match = url.match(/^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) (\/.*)$/i);
     if (!match) {
       url = $("#endpoint")[0].selectize.getValue();
     }
 
+    setURL(url);
+  });
+  
+  function setURL(url) {
+    if (!url) {
+      $(".selectize-container .editable-input").empty();
+      return;
+    }
+    
     $(".selectize-container .editable-input")
       .empty()
       .append($("<span class='method'>").text(url.split(" ")[0]))
       .append(" ")
       .append($("<span class='url'>").text(url.split(" ").slice(1).join(" ")));
-  });
+    
+    if (window.maySaveServerState) {
+      inputAutoHeadersEditor.setValue("", -1);
+      saveServerState();
+    }
+  }
 
   window.serverList.whenServerListAvailable(function(serverList) {
     var $select = $("#server-host").selectize({
@@ -210,11 +231,12 @@ function main(storageInfo) {
         window.maySaveServerState = false;
         
         var serverState = storageInfo[value] || {
-          inputHttpEditor: "GET /path/to/endpoint\n\nAccept: */*",
+          inputHttpEditor: "Accept: */*",
           inputAutoHeadersEditor: "",
           inputBodyEditor: "{}",
           outputHttpEditor: "",
-          outputBodyEditor: ""
+          outputBodyEditor: "",
+          url: "GET /path/to/endpoint"
         };
         
         inputHttpEditor.setValue(serverState.inputHttpEditor, -1);
@@ -222,6 +244,7 @@ function main(storageInfo) {
         inputBodyEditor.setValue(serverState.inputBodyEditor, -1);
         outputHttpEditor.setValue(serverState.outputHttpEditor, -1);
         outputBodyEditor.setValue(serverState.outputBodyEditor, -1);
+        setURL(serverState.url);
         
         chrome.storage.local.set({lastServer: value});
         window.maySaveServerState = true;
@@ -239,21 +262,22 @@ function main(storageInfo) {
     var server = window.serverList.getServer(window.serverSelect.getValue());
     if (!server) {
       window.alert("Nenhum servidor selecionado");
+      return;
     }
     
-    var requestParser = /(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) (\/.*)/i;
-    var inputHttp = inputHttpEditor.getValue();
-    var inputHttpLines = inputHttp.replace("\r", "").split("\n");
-    if (!inputHttpLines.length) {
-      window.alert("Requisição em branco");
-    }
-    
-    if (!requestParser.exec(inputHttpLines[0])) {
+    var url = $(".selectize-container .editable-input").text().replace("\xa0", " ");
+    var requestParser = /^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) (\/.*)$/i;
+    console.log(url);
+    if (!requestParser.exec(url)) {
       window.alert("Requisição inválida\n\nPrimeira linha deve conter algo " +
                   "como GET /organizations/321313213/who-am-i");
+      return;
     }
+
+    var inputHttp = inputHttpEditor.getValue();
+    var inputHttpLines = inputHttp.replace("\r", "").split("\n");
     
-    var requestTarget = requestParser.exec(inputHttpLines[0]);
+    var requestTarget = requestParser.exec(url);
     
     var request = {
       method: requestTarget[1].toUpperCase(),
@@ -266,7 +290,7 @@ function main(storageInfo) {
     };
     var invalidHeaders = [];
     
-    inputHttpLines.slice(1).filter(function (line) {
+    inputHttpLines.filter(function (line) {
       return $.trim(line).length;
     }).forEach(function (headerLine) {
       var sep = headerLine.indexOf(":");
@@ -289,6 +313,7 @@ function main(storageInfo) {
     
     if (invalidHeaders.length) {
       window.alert("Headers inválidos\n\n" + invalidHeaders.join("\n"));
+      return;
     }
     
     sendRequest(server, request);

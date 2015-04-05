@@ -324,9 +324,6 @@ function Server(options) {
     if (path.endsWith("/")) {
       path = path.substring(0, path.length - 1);
     }
-    if (path.indexOf(" ") >= 0 || path.indexOf("//") >= 0) {
-      return [];
-    }
     
     endpointsList.forEach(function(endpoint) {
       if (!path || endpoint.url.indexOf(path) >= 0) {
@@ -343,6 +340,9 @@ function Server(options) {
       }
       
       for (var i = 0; i < queryParts.length; ++i) {
+        if (!queryParts[i].length) {
+          return;
+        }
         if (queryParts[i] == myParts[i]) {
           matchedParts.push(queryParts[i]);
         }
