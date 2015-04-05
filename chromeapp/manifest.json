@@ -10,8 +10,8 @@
   },
   "icons": { 
     "32": "logo_32.png", 
-    "128": "logo_128.jpg", 
-    "16": "logo_32.png"
+    "128": "logo_128.png", 
+    "16": "logo_16.png"
   },
   "permissions": [
     "storage",
