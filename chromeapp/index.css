@@ -10,6 +10,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
+  overflow-y: auto;
 }
 
 #input-editor {
@@ -39,7 +40,20 @@
   color: transparent;
 }
 
-.body-label {
+#input-editor .btn.send-request {
+  position: absolute;
+  top: 0;
+  right: 5px;
+  z-index: 100;
+  color: #0a0;
+  height: 1em;
+  line-height: 1em;
+  border: none;
+  padding: 0;
+  margin: -1px 0 0 0;
+}
+
+#input-editor .body-label {
   font-family: Monaco, Menlo, 'Ubuntu Mono', Consolas, source-code-pro, monospace;
   padding-top: 1em;
   padding-bottom: 1em;
@@ -51,4 +65,20 @@
 
 #output-editor #output-body-editor {
   margin-top: 1em;
+}
+
+.server-item > .api {
+  color: gray;
+}
+
+.server-option > span {
+  display: block;
+}
+
+.server-option > .api {
+  font-weight: bold;
+}
+
+.server-option > .url {
+  color: gray;
 }
