@@ -1,4 +1,4 @@
-$(function() {
+function main(storageInfo) {
   var inputHttpEditor = ace.edit("input-http-editor");
   inputHttpEditor.setTheme("ace/theme/chrome");
   inputHttpEditor.setOptions({maxLines: 20});
@@ -24,6 +24,25 @@ $(function() {
   outputBodyEditor.getSession().setMode("ace/mode/json");
   outputBodyEditor.getSession().setUseWrapMode(true);
   
+  var editors = [inputHttpEditor, inputBodyEditor, outputHttpEditor, outputBodyEditor];
+  
+  editors.forEach(function(editor) {
+    editor.on("change", function saveServerState() {
+      if (window.maySaveServerState) {
+        var info = {};
+        info[serverSelect.getValue()] = {
+          inputHttpEditor: inputHttpEditor.getValue(),
+          inputBodyEditor: inputBodyEditor.getValue(),
+          outputHttpEditor: outputHttpEditor.getValue(),
+          outputBodyEditor: outputBodyEditor.getValue()
+        };
+        storageInfo[serverSelect.getValue()] = info[serverSelect.getValue()];
+        chrome.storage.local.set(info);
+        console.log("wrote", serverSelect.getValue());
+      }
+    });
+  });
+  
   $("#input-editor").resizable({
     handles: "e",
     autoHide: false,
@@ -33,8 +52,7 @@ $(function() {
       var outputEditor = $(this).next();
       outputEditor.css("left", $(this).outerWidth(true) + "px");
       
-      [inputHttpEditor, inputBodyEditor, 
-       outputHttpEditor, outputBodyEditor].forEach(function(editor) {
+      editors.forEach(function(editor) {
         editor.resize();
       });
     }
@@ -81,10 +99,32 @@ $(function() {
           window.alert("Tipo de autenticação não suportado por esse app");
         }
         return false;
+      },
+      onChange: function(value) {
+        window.maySaveServerState = false;
+        
+        var serverState = storageInfo[value] || {
+          inputHttpEditor: "GET /path/to/endpoint\n\nAccept: */*",
+          inputBodyEditor: "{}",
+          outputHttpEditor: "",
+          outputBodyEditor: ""
+        };
+        
+        inputHttpEditor.setValue(serverState.inputHttpEditor, -1);
+        inputBodyEditor.setValue(serverState.inputBodyEditor, -1);
+        outputHttpEditor.setValue(serverState.outputHttpEditor, -1);
+        outputBodyEditor.setValue(serverState.outputBodyEditor, -1);
+        
+        chrome.storage.local.set({lastServer: value});
+        window.maySaveServerState = true;
       }
     });
     
     window.serverSelect = $select[0].selectize;
+    window.serverSelect.setValue(
+      storageInfo.lastServer ||
+      window.serverSelect.options[Object.keys(window.serverSelect.options)[0]].url
+    );
   });
   
   $(".send-request").on("click", function() {
@@ -113,6 +153,7 @@ $(function() {
       url: (server.url + (server.url.endsWith("/") ? "": "/") + requestTarget[2].substring(1)),
       path_qs: requestTarget[2],
       headers: {},
+      autoHeaders: {},
       body: ["PUT", "PATCH", "POST"].indexOf(requestTarget[1].toUpperCase()) >= 0 ?
             inputBodyEditor.getValue() : ""
     };
@@ -143,6 +184,10 @@ $(function() {
       window.alert("Headers inválidos\n\n" + invalidHeaders.join("\n"));
     }
     
+    sendRequest(server, request);
+  });
+  
+  var sendRequest = function(server, request) {
     server.getSigningFunction(request, window.userInputService, function(signingFunction) {
       signingFunction.sign(request);
       server.send(request, function(response) {
@@ -163,10 +208,22 @@ $(function() {
         } catch(e) {
           outputBodyEditor.setValue(limitLines(response.body), -1);
         }
+        
+        if (response.statusLine.indexOf("403") >= 0) {
+          $(".btn.forget-credentials").show()
+                                      .off("click")
+                                      .one("click", function() {
+                                        server.eraseAuthInfo(request);
+                                        $(".btn.forget-credentials").hide();
+                                        sendRequest(server, request);
+                                      });
+        } else {
+          $(".btn.forget-credentials").hide();
+        }
       });
     });
-  });
-});
+  };
+}
 
 window.userInputService = {
   getApiKeyCredentials: function(options, callback) {
@@ -176,6 +233,7 @@ window.userInputService = {
     modal.find("[data-bind='server-url']").text(options.scopeUrlPrefix);
     modal.find("input[name]").val("");
     modal.find(".btn-primary").one("click", function() {
+     modal.modal("hide");
       var credentials = {};
       var errors = false;
       
@@ -197,3 +255,9 @@ window.userInputService = {
     });
   }
 };
+
+$(function() {
+  chrome.storage.local.get(null, function(storageInfo) {
+    main(storageInfo);
+  });
+});

@@ -29,7 +29,7 @@
           <div class="col-sm-6 col-md-6">
             <form class="navbar-form">
               <div class="form-group" style="width: 100%;">
-                <select name="server-host" id="server-host"></select>
+                <select id="server-host" placeholder="Selecione ou digite aqui..."></select>
               </div>
             </form>
           </div>
@@ -49,6 +49,9 @@
 }</div>
       </div>
       <div id="output-editor" class="editor-pane">
+        <button class="btn btn-link forget-credentials" style="display: none;">
+          Tentar com outras credenciais
+        </button>
         <div id="output-http-editor">HTTP/1.1 201 Created
 
 Content-Type: application/json</div>

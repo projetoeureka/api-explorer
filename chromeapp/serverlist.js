@@ -140,27 +140,17 @@ function Server(options) {
         scopeUrlPrefix: this.url + "organizations/"+ organizationInfo[1] + "/*",
         userInputService: userInputService,
         callback: function(apiKey) {
-          callback(GeekieSignV1(apiKey));
+          callback(GeekieSignV2(apiKey));
         }
       });
     }
   };
-  
+
   this.getApiKey = function(options) {
-    var matchingKeys = this.apiKeys.filter(function(apiKey) {
-      if (apiKey.kind != options.kind) {
-        return false;
-      } 
-      for (var key in Object.keys(options.scope)) {
-        if (apiKey.scope[key] != options.scope[key]) {
-          return false;
-        }
-      }
-      return true;
-    });
+    var matchingKey = this.matchingApiKey(options);
     
-    if (matchingKeys.length) {
-      return options.callback(matchingKeys[0]);
+    if (matchingKey) {
+      return options.callback(matchingKey);
     }
     
     options.userInputService.getApiKeyCredentials(options, function(credentials) {
@@ -176,11 +166,67 @@ function Server(options) {
     }.bind(this));
   };
   
+  this.matchingApiKey = function(options) {
+    var matchingKeys = this.apiKeys.filter(function(apiKey) {
+      if (apiKey.kind != options.kind) {
+        return false;
+      } 
+      for (var key in Object.keys(options.scope)) {
+        if (apiKey.scope[key] != options.scope[key]) {
+          return false;
+        }
+      }
+      return true;
+    });
+    
+    if (matchingKeys.length) {
+      return matchingKeys[0];
+    }
+    
+    return null;
+  };
+
+  this.eraseAuthInfo = function(request) {
+    if (this.api == "swag" && (
+      request.path_qs.startsWith("/api/v1") || request.path_qs.startsWith("/api/v2"))
+    ) {
+      return;
+    }
+    
+    if (this.signatureMethod == "geekie-sign-v1") {
+      return this.eraseApiKey({
+        kind: "geekie-sign-v1", 
+        scope: {},
+      });
+    }
+    else if (this.signatureMethod == "geekie-sign-v2") {
+      var organizationInfo = /^\/organizations\/(\d+)\//.exec(request.path_qs);
+      if (!organizationInfo) {
+        return;
+      }
+      
+      return this.eraseApiKey({
+        kind: "geekie-sign-v2", 
+        scope: {organization_id: organizationInfo[1]},
+      });
+    }
+  };
+  
+  this.eraseApiKey = function(options) {
+    var matchingKey = this.matchingApiKey(options);
+    
+    if (matchingKey) {
+      this.apiKeys.splice(this.apiKeys.indexOf(matchingKey), 1);
+      window.serverList.save();
+    }
+  };
+  
   this.send = function(request, callback) {
     $.ajax({
       type: request.method,
       headers: request.headers,
       url: request.url,
+      data: request.body,
       complete: function(jqXhr) {
         callback({
           statusLine: "HTTP " + jqXhr.status + " " + jqXhr.statusText,
