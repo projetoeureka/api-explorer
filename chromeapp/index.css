@@ -19,8 +19,8 @@
 
 #endpoint-selection .selectize-container {
   position: absolute;
-  left: 50px;
-  right: 80px;
+  left: 65px;
+  right: 95px;
 }
 
 #endpoint-selection .selectize-container .selectize-control .selectize-input {
@@ -118,7 +118,7 @@
   position: absolute;
   top: 0;
   right: 5px;
-  z-index: 100;
+  z-index: 5;
   color: #f66;
   border: none;
   padding: 0;

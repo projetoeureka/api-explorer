@@ -10,6 +10,9 @@ function ServerList(serverList) {
         return;
       }
       items.serverList = items.serverList || [];
+      if (!items.serverList.length) {
+        items.serverList.push(new Server({url: "http://api.geekielab.com.br/"}));
+      }
       this._servers = items.serverList.map(function(server) { 
         return new Server(server); 
       });
