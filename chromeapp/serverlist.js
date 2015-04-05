@@ -256,6 +256,123 @@ function Server(options) {
       }
     });
   };
+  
+  this.getEndpoints = function(query) {
+    var endpointsList;
+    
+    if (this.api == "extapi") {
+      endpointsList = [{
+        url: "/organizations/:organizationId/members",
+        method: "POST",
+        description: "Cadastra um novo usuário (membro)"
+      }, {
+        url: "/organizations/:organizationId/members/:memberId",
+        method: "PUT",
+        description: "Atualiza usuário (membro)"
+      }, {
+        url: "/organizations/:organizationId/members/:memberId",
+        method: "GET",
+        description: "Obtém um usuário (membro) por id"
+      }, {
+        url: "/organizations/:organizationId/members/list",
+        method: "GET",
+        description: "Lista usuários da organização com paginação"
+      }, {
+        url: "/organizations/:organizationId/tagkinds",
+        method: "GET",
+        description: "Obtém lista de tag kinds"
+      }, {
+        url: "/organizations/:organizationId/tags/:tagId",
+        method: "GET",
+        description: "Obtem uma tag por ID"
+      }, {
+        url: "/organizations/:organizationId/tagKinds/:kindId/tags/search?name=",
+        method: "GET",
+        description: "Obtem uma tag por nome e tipo de tag"
+      }, {
+        url: "/organizations/:organizationId/tagkinds/:kindId/tags",
+        method: "POST",
+        description: "Cria uma tag"
+      }, {
+        url: "/organizations/:organizationId/tags/:tagId",
+        method: "DELETE",
+        description: "Remove uma tag"
+      }, {
+        url: "/organizations/:organizationId/members/:memberId/exams/:examId/answers",
+        method: "PUT",
+        description: "Envia/atualiza respostas de uma prova feita offline"
+      }];
+    } else {
+      return [];
+    }
+    
+    var matches = [];
+    var method = /^GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS/i.exec(query);
+    if (method) {
+      method = method[0].toUpperCase();
+      query = query.substring(method.length + 1);
+      endpointsList = endpointsList.filter(function(endpoint) {
+        return endpoint.method == method;
+      });
+    }
+    
+    var path = query;
+    console.log(path);
+    if (path.startsWith("/")) {
+      path = path.substring(1);
+    }
+    if (path.endsWith("/")) {
+      path = path.substring(0, path.length - 1);
+    }
+    if (path.indexOf(" ") >= 0 || path.indexOf("//") >= 0) {
+      return [];
+    }
+    
+    endpointsList.forEach(function(endpoint) {
+      if (!path || endpoint.url.indexOf(path) >= 0) {
+        return matches.push({url: endpoint.method + " " + endpoint.url, 
+                             description: endpoint.description});
+      }
+      
+      var queryParts = path.split("/");
+      var myParts = endpoint.url.substring(1).split("/");
+      var matchedParts = [];
+      
+      if (queryParts.length > myParts.length) {
+        return;
+      }
+      
+      for (var i = 0; i < queryParts.length; ++i) {
+        if (queryParts[i] == myParts[i]) {
+          matchedParts.push(queryParts[i]);
+        }
+        else if (myParts[i].startsWith(":")) {
+          if (queryParts[i].length > 0) {
+            matchedParts.push(queryParts[i]);
+          } else {
+            return;
+          }
+        }
+        else if (myParts[i].startsWith(queryParts[i]) && i == queryParts.length - 1) {
+          matchedParts.push(queryParts[i]);
+        } else {
+          return;
+        }
+      }
+      
+      for (; i < myParts.length; ++i) {
+        matchedParts.push(myParts[i]);
+      }
+      
+      return matches.push({
+        url: endpoint.method + " /" + matchedParts.join("/"),
+        description: endpoint.description
+      });
+    });
+    
+    console.log(matches);
+    return matches;
+  };
 }
 
 var serverList = new ServerList();

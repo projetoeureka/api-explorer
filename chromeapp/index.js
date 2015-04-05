@@ -85,6 +85,85 @@ function main(storageInfo) {
     }
   });
   
+  $("#endpoint").selectize({
+    createOnBlur: true,
+    selectOnTab: true,
+    addPrecedence: true,
+    loadThrottle: null,
+    preload: "focus",
+    valueField: "url",
+    labelField: "url",
+    searchField: "url",
+    load: function(query, callback) {
+      this.clearOptions();
+      
+      if (!window.serverSelect.getValue()) {
+        callback();
+      }
+      var server = window.serverList.getServer(window.serverSelect.getValue());
+      return callback(server.getEndpoints(query));
+    },
+    createFilter: function(url) {
+      return url.match(/^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) (\/.*)$/i);
+    },
+    create: function(url) {
+      var match = url.match(/^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) (\/.*)$/i);
+      if (!match) {
+        return false;
+      }
+      
+      return {url: url};
+    },
+    render: {
+      item: function(item, escape) {
+        return "<div class='noneditable-input'>" + escape(item.url) + "</div>";
+      },
+      option: function(item, escape) {
+        return "<div class='endpoint-option'><div class='endpoint-url'>" + 
+          "<span class='method'>" + item.url.split(" ")[0] + "</span> " +
+          "<span class='url'>" + escape(item.url.split(" ").slice(1).join(" ")) + "</span>" +
+          "</div>" +
+          "<div class='endpoint-description'>" + escape(
+            item.description || "(do histórico)"
+          ) + "</div></div>";
+      },
+    },
+    onChange: function(value) {
+      var url = this.getValue();
+      if (!url) {
+        return;
+      }
+      
+      $(".selectize-container .editable-input")
+        .empty()
+        .append($("<span class='method'>").text(url.split(" ")[0]))
+        .append("&nbsp;")
+        .append($("<span class='url'>").text(url.split(" ").slice(1).join(" ")));
+    },
+    onDropdownOpen: function() {
+      $(".selectize-container .noneditable-input").show();
+      $(".selectize-container .editable-input").hide();
+    },
+    onDropdownClose: function() {
+      $(".selectize-container .noneditable-input").hide();
+      $(".selectize-container .editable-input").show();
+    }
+  });
+  
+  $(".selectize-container .editable-input").on("blur", function() {
+    var url = $.trim($(this).text().replace(" ", " "));
+    var match = url.match(/^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) (\/.*)$/i);
+    if (!match) {
+      url = $("#endpoint")[0].selectize.getValue();
+    }
+
+    $(".selectize-container .editable-input")
+      .empty()
+      .append($("<span class='method'>").text(url.split(" ")[0]))
+      .append(" ")
+      .append($("<span class='url'>").text(url.split(" ").slice(1).join(" ")));
+  });
+
   window.serverList.whenServerListAvailable(function(serverList) {
     var $select = $("#server-host").selectize({
       valueField: "url",
@@ -161,7 +240,6 @@ function main(storageInfo) {
     if (!server) {
       window.alert("Nenhum servidor selecionado");
     }
-    console.log(server);
     
     var requestParser = /(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) (\/.*)/i;
     var inputHttp = inputHttpEditor.getValue();

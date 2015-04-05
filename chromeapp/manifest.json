@@ -8,7 +8,7 @@
       "local_path": "index.html"
     }
   },
-  "content_security_policy": "default-src 'self'; connect-src *; script-src 'self' 'unsafe-inline' https://code.jquery.com/ https://maxcdn.bootstrapcdn.com/ https://cdnjs.cloudflare.com/; style-src * 'unsafe-inline'; img-src *; font-src *; child-src 'self' https://cdnjs.cloudflare.com/;",
+  "content_security_policy": "default-src 'self'; connect-src *; script-src 'self' https://code.jquery.com/ https://maxcdn.bootstrapcdn.com/ https://cdnjs.cloudflare.com/; style-src * 'unsafe-inline'; img-src *; font-src *; child-src 'self' https://cdnjs.cloudflare.com/;",
   "icons": { "32": "logo_32.png", "128": "logo_128.jpg" },
   "permissions": [
     "storage",

@@ -1,9 +1,48 @@
 #editor-panes {
   position: absolute;
-  top: 58px;
+  top: 98px;
   left: 0;
   right: 0;
   bottom: 0;
+}
+
+#endpoint-selection {
+  position: absolute;
+  top: 58px;
+  left: 0;
+  right: 0;
+  height: 40px;
+  line-height: 35px;
+  color: #333;
+  border-bottom: gray solid 3px;
+}
+
+#endpoint-selection .selectize-container {
+  position: absolute;
+  left: 50px;
+  right: 40px;
+}
+
+#endpoint-selection .selectize-container .selectize-control .selectize-input {
+  border-top-right-radius: 0px;
+  border-bottom-right-radius: 0px;
+}
+
+#endpoint-selection .selectize-container .editable-input {
+  position: absolute;
+  z-index: 100;
+  top: 5px;
+  left: 10px;
+  height: 25px;
+  line-height: 25px;
+  background: white;
+}
+
+#endpoint-selection .btn.send-request {
+  border-top-left-radius: 0px;
+  border-bottom-left-radius: 0px;
+  height: 36px;
+  line-height: 24px;
 }
 
 #editor-panes > .editor-pane {
@@ -33,7 +72,7 @@
   bottom: 0;
   background-color: gray;
   position: absolute;
-  z-index: 50 !important;
+  z-index: 5 !important;
 }
 
 #input-editor #input-http-editor .ace_gutter .ace_gutter-cell,
@@ -100,5 +139,14 @@
 }
 
 .server-option > .url {
+  color: gray;
+}
+
+.endpoint-url > .method {
+  font-weight: bold;
+  color: #606;
+}
+
+.endpoint-option .endpoint-description {
   color: gray;
 }
