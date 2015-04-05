@@ -121,7 +121,7 @@ function Server(options) {
         scopeUrlPrefix: this.url + "*",
         userInputService: userInputService,
         callback: function(apiKey) {
-          beginLoggedUserAuth(apiKey, callback);
+          callback(LoggedUserAuth(apiKey));
         }
       });
     }

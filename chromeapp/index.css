@@ -17,6 +17,10 @@
   border-bottom: gray solid 3px;
 }
 
+.navbar-static-top {
+  z-index: 0 !important;
+}
+
 #endpoint-selection .selectize-container {
   position: absolute;
   left: 65px;
@@ -30,7 +34,7 @@
 
 #endpoint-selection .selectize-container .editable-input {
   position: absolute;
-  z-index: 100;
+  z-index: 5;
   top: 5px;
   left: 10px;
   height: 25px;

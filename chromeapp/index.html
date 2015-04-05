@@ -1,19 +1,22 @@
 <!doctype HTML>
 <html>
   <head>
+    <meta charset="utf-8">
     <title>Geekie API Explorer</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+    <link rel="stylesheet" href="third-party/css/bootstrap.min.css">
+    <link rel="stylesheet" href="third-party/css/selectize.bootstrap3.min.css">
+    <link rel="stylesheet" href="third-party/css/selectize.min.css">
+    <script src="third-party/js/jquery-2.1.3.min.js"></script>
+    <script src="third-party/js/jquery-ui.min.js"></script>
+    <script src="third-party/js/bootstrap.min.js"></script>
+    <script src="third-party/js/ace.js"></script>
+    <script src="third-party/js/selectize.min.js"></script>
+    <script src="third-party/js/hmac-md5.js"></script>
+    <script src="third-party/js/hmac-sha1.js"></script>
+    <script src="third-party/js/sha1.js"></script>
+    <script src="third-party/js/bootbox.min.js"></script>
+
     <link rel="stylesheet" href="index.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.0/css/selectize.bootstrap3.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.0/css/selectize.min.css">
-    <script src="https://code.jquery.com/jquery-2.1.3.js"></script>
-    <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.1.9/ace.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.0/js/standalone/selectize.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/hmac-md5.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/hmac-sha1.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/sha1.js"></script>
     <script src="utils.js" type="text/javascript"></script>
     <script src="serverlist.js" type="text/javascript"></script>
     <script src="index.js" type="text/javascript"></script>
@@ -57,8 +60,8 @@
         <div class="body-label">Headers HTTP</div>
         <div id="input-http-editor"></div>
         <div id="input-auto-headers"></div>
-        <div class="body-label">Body (PUT|POST|PATCH)</div>
-        <div id="input-body-editor"></div>
+        <div class="body-label if-http-input-body">Body (PUT|POST|PATCH)</div>
+        <div id="input-body-editor" class="if-http-input-body"></div>
       </div>
       <div id="output-editor" class="editor-pane">
         <button class="btn btn-link forget-credentials" style="display: none;">
@@ -138,12 +141,17 @@
             <p><strong>URL</strong>: <code data-bind="server-url"></code></p>
             <form>
               <div class="form-group">
-                <label>Domínio do Cookie</label>
-                <input type="text" class="form-control" name="domain">
+                <label>Copie o cookie de sessão abaixo</label>
+                <textarea 
+                  name="session_cookie"
+                  class="form-control"
+                  placeholder="(e.g. b08dc9196562039710c47daffc0a26bed1474f0agAJKrxwhVUdB1UhHJebujX1xAShVB19jc3JmdF9xAlgoAAAAZTk2MTJhZTFkMTYyMzI3ODlkZTlhZWQzZTRhMmM3MzVhOWE0YmEwN3EDVQxhY2Nlc3NfdG9rZW5xBFgoAAAAenNEekNvU0xoc05rd3RpdGFCYVhABUVhdHhtbldnSUtFTW9JellaZnEFdYdxBi4=)"
+                  rows="5"
+                ></textarea>
                 <p class="help-block">
-                  No momento suportamos apenas cookies do learn 
-                  (https://alunos.geekielab.com.br/ ou equivalente).
-                  Favor incluir schema e domínio
+                  No momento suportamos apenas cookies do learn. Para obter o
+                  cookie, acesse <code>chrome://settings/cookies</code> em uma
+                  outra aba do navegador.
                 </p>
               </div>
             </form>

@@ -1,3 +1,5 @@
+window.alert = bootbox.alert;
+
 function main(storageInfo) {
   var inputHttpEditor = ace.edit("input-http-editor");
   inputHttpEditor.setTheme("ace/theme/chrome");
@@ -221,6 +223,12 @@ function main(storageInfo) {
       inputAutoHeadersEditor.setValue("", -1);
       saveServerState();
     }
+
+    if (/^(PUT|POST|PATCH)/i.test(url)) {
+      $(".if-http-input-body").css("visibility", "visible");
+    } else {
+      $(".if-http-input-body").css("visibility", "hidden");
+    }
   }
 
   $(".btn.show-history").on("click", function() {
@@ -234,6 +242,7 @@ function main(storageInfo) {
       valueField: "url",
       labelField: "url",
       searchField: "url",
+      dropdownParent: "body",
       options: serverList,
       render: {
         item: function(item, escape) {
@@ -406,13 +415,13 @@ window.userInputService = {
     modal.modal();
     modal.modal("show");
     modal.find("[data-bind='server-url']").text(options.scopeUrlPrefix);
-    modal.find("input[name]").val("");
+    modal.find("input[name], textarea").val("");
     modal.find(".btn-primary").one("click", function() {
      modal.modal("hide");
       var credentials = {};
       var errors = false;
       
-      modal.find("input[name]").toArray().forEach(function(input) {
+      modal.find("input[name], textarea").toArray().forEach(function(input) {
         var name = $(input).attr("name");
         var value = $.trim($(input).val());
         

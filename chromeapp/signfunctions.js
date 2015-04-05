@@ -46,18 +46,18 @@ function GeekieSignV2(apiKey) {
   };
 }
 
-function beginLoggedUserAuth(apiKey, callback) {
-  chrome.cookies.getAll({url: apiKey.credentials["domain"], name: "session"}, function(cookies) {
-    callback({
+function LoggedUserAuth(apiKey) {
+  return {
       sign: function(request) {
-        if (!cookies) {
-          return window.alert(
-            "Cookie não encontrada para url='" + apiKey.credentials["domain"] + "' name='session'"
-          );
-        }
+        console.log(apiKey);
+        var cookie = apiKey.credentials["session_cookie"];
         
-        var cookie = cookies[0];
-        var accessToken = pickle.loads(atob(cookie.value.slice(40)))[2].access_token;
+        try {
+          var accessToken = pickle.loads(atob(cookie.slice(40)))[2].access_token;
+        } catch (e) {
+          window.alert("Cookie inválido");
+          return;
+        }
         
         var signatureHeaders = {
           "Authorization": "Bearer: " + accessToken
@@ -65,6 +65,5 @@ function beginLoggedUserAuth(apiKey, callback) {
         
         $.extend(request.autoHeaders, signatureHeaders);
       }
-    });
-  });
+  };
 }

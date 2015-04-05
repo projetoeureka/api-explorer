@@ -4,12 +4,15 @@
   "version": "0.1.0.0",
   "manifest_version": 2,
   "app": {
-    "launch": {
-      "local_path": "index.html"
+    "background": {
+      "scripts": ["launcher.js"]
     }
   },
-  "content_security_policy": "default-src 'self'; connect-src *; script-src 'self' https://code.jquery.com/ https://maxcdn.bootstrapcdn.com/ https://cdnjs.cloudflare.com/; style-src * 'unsafe-inline'; img-src *; font-src *; child-src 'self' https://cdnjs.cloudflare.com/ https://geekie.s3.amazonaws.com/;",
-  "icons": { "32": "logo_32.png", "128": "logo_128.jpg" },
+  "icons": { 
+    "32": "logo_32.png", 
+    "128": "logo_128.jpg", 
+    "16": "logo_32.png"
+  },
   "permissions": [
     "storage",
     "unlimitedStorage",
