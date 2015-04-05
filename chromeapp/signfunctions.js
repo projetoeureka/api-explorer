@@ -19,7 +19,6 @@ function GeekieSignV1(apiKey) {
           apiKey.credentials["shared_secret"]
         ).toString()
       };
-      $.extend(request.headers, signatureHeaders);
       $.extend(request.autoHeaders, signatureHeaders);
     }
   };
@@ -42,7 +41,6 @@ function GeekieSignV2(apiKey) {
         ).toString()
       };
       
-      $.extend(request.headers, signatureHeaders);
       $.extend(request.autoHeaders, signatureHeaders);  
     }
   };
@@ -65,7 +63,6 @@ function beginLoggedUserAuth(apiKey, callback) {
           "Authorization": "Bearer: " + accessToken
         };
         
-        $.extend(request.headers, signatureHeaders);
         $.extend(request.autoHeaders, signatureHeaders);
       }
     });

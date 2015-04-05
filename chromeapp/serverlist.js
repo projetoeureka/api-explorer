@@ -96,6 +96,7 @@ ServerList.getApiDisplayName = function(api) {
 
 function Server(options) {
   var info = ServerList.identifyServer(options.url);
+  var server = this;
   
   this.url = options.url;
   if (!this.url.endsWith("/")) {
@@ -105,6 +106,10 @@ function Server(options) {
   
   this.api = info.api;
   this.signatureMethod = info.signatureMethod;
+  this.requestHistory = [];
+  chrome.storage.sync.get([server.url + "_history"], function(items) {
+    server.requestHistory = items[server.url + "_history"] || [];
+  });
   
   this.toJson = function() {
     return {url: this.url, apiKeys: this.apiKeys};
@@ -246,22 +251,44 @@ function Server(options) {
     });
     
     if (isJson && !hasContentHeaderSet) {
-      request.headers["Content-Type"] = "application/json";
       request.autoHeaders["Content-Type"] = "application/json";
     }
     
+    var timestamp = new Date();
+    var server = this;
+    
     $.ajax({
       type: request.method,
-      headers: request.headers,
+      headers: $.extend({}, request.autoHeaders, request.headers),
       url: request.url,
       data: request.body,
       complete: function(jqXhr) {
+        server.addHistoryEntry({
+          method: request.method,
+          url: request.path_qs,
+          timestamp: timestamp.getTime(),
+          headers: request.headers,
+          body: request.body
+        });
+        
         callback({
           statusLine: "HTTP " + jqXhr.status + " " + jqXhr.statusText,
           headers: jqXhr.getAllResponseHeaders(),
           body: jqXhr.responseText
         });
       }
+    });
+  };
+  
+  this.addHistoryEntry = function(entry) {
+    var key = this.url + "_history";
+    var server = this;
+    
+    chrome.storage.sync.get([key], function(info) {
+      server.requestHistory = info[key] || server.requestHistory;
+      server.requestHistory.unshift(entry);
+      info[key] = server.requestHistory;
+      chrome.storage.sync.set(info);
     });
   };
   
@@ -311,8 +338,24 @@ function Server(options) {
         description: "Envia/atualiza respostas de uma prova feita offline"
       }];
     } else {
-      return [];
+      endpointsList = [];
     }
+    
+    // merge history
+    var keys = {};
+    endpointsList.forEach(function(endpoint) {
+      keys[endpoint.method + " " + endpoint.url] = true;
+    });
+    
+    this.requestHistory.forEach(function(entry) {
+      var key = entry.method + " " + entry.url;
+      if (!keys.hasOwnProperty(key)) {
+        keys[key] = true;
+        endpointsList.push(entry);
+      }
+    });
+    
+    console.log(this.requestHistory);
     
     var matches = [];
     var method = /^GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS/i.exec(query);
