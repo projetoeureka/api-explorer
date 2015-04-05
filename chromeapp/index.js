@@ -81,7 +81,6 @@ function main(storageInfo) {
         };
         storageInfo[serverSelect.getValue()] = info[serverSelect.getValue()];
         chrome.storage.local.set(info);
-        console.log("wrote", serverSelect.getValue());
       }
     }
   
@@ -263,14 +262,7 @@ function main(storageInfo) {
         if (!info.ok) {
           window.alert("URL inválida");
         }
-        if (info.signatureMethod == "geekie-sign-v1") {
-          return window.serverList.addServer(new Server({url: url}));
-        } else if (info.signatureMethod == "geekie-sign-v2") {
-          return window.serverList.addServer(new Server({url: url}));
-        } else {
-          window.alert("Tipo de autenticação não suportado por esse app");
-        }
-        return false;
+        return window.serverList.addServer(new Server({url: url}));
       },
       onChange: function(value) {
         window.maySaveServerState = false;
@@ -292,6 +284,7 @@ function main(storageInfo) {
         setURL(serverState.url);
         
         chrome.storage.local.set({lastServer: value});
+        $(".btn.forget-credentials").hide();
         window.maySaveServerState = true;
       }
     });
@@ -312,7 +305,6 @@ function main(storageInfo) {
     
     var url = $(".selectize-container .editable-input").text().replace("\xa0", " ");
     var requestParser = /^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) (\/.*)$/i;
-    console.log(url);
     if (!requestParser.exec(url)) {
       window.alert("Requisição inválida\n\nPrimeira linha deve conter algo " +
                   "como GET /organizations/321313213/who-am-i");
@@ -367,6 +359,7 @@ function main(storageInfo) {
   var sendRequest = function(server, request) {
     outputHttpEditor.setValue("Aguarde...", -1);
     outputBodyEditor.setValue("", -1);
+    $(".btn.forget-credentials").hide();
     
     server.getSigningFunction(request, window.userInputService, function(signingFunction) {
       signingFunction.sign(request);

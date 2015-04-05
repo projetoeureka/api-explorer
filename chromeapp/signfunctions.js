@@ -51,7 +51,7 @@ function beginLoggedUserAuth(apiKey, callback) {
     callback({
       sign: function(request) {
         if (!cookies) {
-          window.alert(
+          return window.alert(
             "Cookie não encontrada para url='" + apiKey.credentials["domain"] + "' name='session'"
           );
         }

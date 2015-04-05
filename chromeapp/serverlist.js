@@ -4,23 +4,30 @@ function ServerList(serverList) {
   this._initCallbacks = [];
   
   this.init = function() {
-    chrome.storage.sync.get(["serverList"], function(items) {
-      if (chrome.runtime.lastError) {
-        console.log(chrome.runtime.lastError);
-        return;
+    var list = this;
+    
+    $.ajax({
+      url: "https://geekie.s3.amazonaws.com/api-explorer/directory.json",
+      type: "GET",
+      dataType: "json",
+      success: function(apiDirectory) {
+        window.apiDirectory = apiDirectory;
+        apiDirectory.forEach(function(api) { apiDirectory[api.id] = api; });
+        chrome.storage.sync.get(["serverList"], function(items) {
+          items.serverList = items.serverList || [];
+          if (!items.serverList.length) {
+            items.serverList.push(new Server({url: "http://api.geekielab.com.br/"}));
+          }
+          list._servers = items.serverList.map(function(server) { 
+            return new Server(server); 
+          });
+          list._initDone = true;
+          list._initCallbacks.forEach(function(callback) {
+            callback(list._servers);
+          });
+        });   
       }
-      items.serverList = items.serverList || [];
-      if (!items.serverList.length) {
-        items.serverList.push(new Server({url: "http://api.geekielab.com.br/"}));
-      }
-      this._servers = items.serverList.map(function(server) { 
-        return new Server(server); 
-      });
-      this._initDone = true;
-      this._initCallbacks.forEach(function(callback) {
-        callback(this._servers);
-      }.bind(this));
-    }.bind(this));
+    });
   };
   
   this.whenServerListAvailable = function(callback) {
@@ -68,33 +75,19 @@ ServerList.identifyServer = function(serverUri) {
     return {ok: false};
   }
   
-  externalApiUris = [
-    "http://api.geekielab.com.br/",
-    "http://geekielab-api.herokuapp.com/",
-    "http://geekielab-api-canary.herokuapp.com/",
-    "http://geekielab-api-staging.herokuapp.com/",
-    "http://geekielab-api-latest.herokuapp.com/",
-  ];
+  var matchingApis = apiDirectory.filter(function(api) {
+    return api.knownServers.indexOf(serverUri) >= 0;
+  });
   
-  swagUris = [
-    "http://www.geekielab.com.br/",
-    "http://geekieid.herokuapp.com/",
-    "http://geekieid-staging.herokuapp.com/",
-    "http://geekieid-canary.herokuapp.com/",
-    "http://geekieid-latest.herokuapp.com/"
-  ];
-  
-  if (externalApiUris.indexOf(serverUri) >= 0) {
-    return {ok: true, signatureMethod: "geekie-sign-v2", api: "extapi"};
-  } else if (swagUris.indexOf(serverUri) >= 0) {
-    return {ok: true, signatureMethod: "geekie-sign-v1", api: "swag"};
+  if (matchingApis.length == 1) {
+    return {ok: true, api: matchingApis[0].id};
   } else {
-    return {ok: true, signatureMethod: "geekie-sign-v1", api: undefined};
+    return {ok: true, api: undefined};
   }
 };
 
 ServerList.getApiDisplayName = function(api) {
-  return {extapi: "API GeekieLab", swag: "swag"}[api];
+  return apiDirectory[api].displayName || "<API desconhecida>";
 };
 
 function Server(options) {
@@ -110,7 +103,7 @@ function Server(options) {
   this.api = info.api;
   this.signatureMethod = info.signatureMethod;
   this.requestHistory = [];
-  chrome.storage.sync.get([server.url + "_history"], function(items) {
+  chrome.storage.local.get([server.url + "_history"], function(items) {
     server.requestHistory = items[server.url + "_history"] || [];
   });
   
@@ -133,7 +126,7 @@ function Server(options) {
       });
     }
     
-    if (this.signatureMethod == "geekie-sign-v1") {
+    if (this.api != "extapi") {
       return this.getApiKey({
         kind: "geekie-sign-v1", 
         scope: {},
@@ -144,7 +137,7 @@ function Server(options) {
         }
       });
     }
-    else if (this.signatureMethod == "geekie-sign-v2") {
+    else {
       var organizationInfo = /^\/organizations\/(\d+)\//.exec(request.path_qs);
       if (!organizationInfo) {
         return callback(NoSignature());
@@ -206,16 +199,19 @@ function Server(options) {
     if (this.api == "swag" && (
       request.path_qs.startsWith("/api/v1") || request.path_qs.startsWith("/api/v2"))
     ) {
-      return;
+      return this.eraseApiKey({
+        kind: "logged-user",
+        scope: {}
+      });
     }
     
-    if (this.signatureMethod == "geekie-sign-v1") {
+    if (this.api != "extapi") {
       return this.eraseApiKey({
         kind: "geekie-sign-v1", 
         scope: {},
       });
     }
-    else if (this.signatureMethod == "geekie-sign-v2") {
+    else {
       var organizationInfo = /^\/organizations\/(\d+)\//.exec(request.path_qs);
       if (!organizationInfo) {
         return;
@@ -275,7 +271,7 @@ function Server(options) {
         });
         
         callback({
-          statusLine: "HTTP " + jqXhr.status + " " + jqXhr.statusText,
+          statusLine: jqXhr.status + " " + jqXhr.statusText,
           headers: jqXhr.getAllResponseHeaders(),
           body: jqXhr.responseText
         });
@@ -287,62 +283,16 @@ function Server(options) {
     var key = this.url + "_history";
     var server = this;
     
-    chrome.storage.sync.get([key], function(info) {
+    chrome.storage.local.get([key], function(info) {
       server.requestHistory = info[key] || server.requestHistory;
       server.requestHistory.unshift(entry);
       info[key] = server.requestHistory;
-      chrome.storage.sync.set(info);
+      chrome.storage.local.set(info);
     });
   };
   
   this.getEndpoints = function(query) {
-    var endpointsList;
-    
-    if (this.api == "extapi") {
-      endpointsList = [{
-        url: "/organizations/:organizationId/members",
-        method: "POST",
-        description: "Cadastra um novo usuário (membro)"
-      }, {
-        url: "/organizations/:organizationId/members/:memberId",
-        method: "PUT",
-        description: "Atualiza usuário (membro)"
-      }, {
-        url: "/organizations/:organizationId/members/:memberId",
-        method: "GET",
-        description: "Obtém um usuário (membro) por id"
-      }, {
-        url: "/organizations/:organizationId/members/list",
-        method: "GET",
-        description: "Lista usuários da organização com paginação"
-      }, {
-        url: "/organizations/:organizationId/tagkinds",
-        method: "GET",
-        description: "Obtém lista de tag kinds"
-      }, {
-        url: "/organizations/:organizationId/tags/:tagId",
-        method: "GET",
-        description: "Obtem uma tag por ID"
-      }, {
-        url: "/organizations/:organizationId/tagKinds/:kindId/tags/search?name=",
-        method: "GET",
-        description: "Obtem uma tag por nome e tipo de tag"
-      }, {
-        url: "/organizations/:organizationId/tagkinds/:kindId/tags",
-        method: "POST",
-        description: "Cria uma tag"
-      }, {
-        url: "/organizations/:organizationId/tags/:tagId",
-        method: "DELETE",
-        description: "Remove uma tag"
-      }, {
-        url: "/organizations/:organizationId/members/:memberId/exams/:examId/answers",
-        method: "PUT",
-        description: "Envia/atualiza respostas de uma prova feita offline"
-      }];
-    } else {
-      endpointsList = [];
-    }
+    var endpointsList = apiDirectory[this.api].endpoints.slice();
     
     // merge history
     var keys = {};
@@ -358,8 +308,6 @@ function Server(options) {
       }
     });
     
-    console.log(this.requestHistory);
-    
     var matches = [];
     var method = /^GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS/i.exec(query);
     if (method) {
@@ -371,7 +319,6 @@ function Server(options) {
     }
     
     var path = query;
-    console.log(path);
     if (path.startsWith("/")) {
       path = path.substring(1);
     }
@@ -424,7 +371,6 @@ function Server(options) {
       });
     });
     
-    console.log(matches);
     return matches;
   };
 }
