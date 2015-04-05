@@ -2,16 +2,19 @@ $(function() {
   var inputHttpEditor = ace.edit("input-http-editor");
   inputHttpEditor.setTheme("ace/theme/chrome");
   inputHttpEditor.setOptions({maxLines: 20});
+  inputHttpEditor.getSession().setUseWrapMode(true);
 
   var inputBodyEditor = ace.edit("input-body-editor");
   inputBodyEditor.setTheme("ace/theme/chrome");
   inputBodyEditor.setOptions({maxLines: 1000});
   inputBodyEditor.getSession().setMode("ace/mode/json");
+  inputBodyEditor.getSession().setUseWrapMode(true);
   
   var outputHttpEditor = ace.edit("output-http-editor");
   outputHttpEditor.setTheme("ace/theme/monokai");
   outputHttpEditor.setReadOnly(true);
   outputHttpEditor.setOptions({maxLines: 20, showPrintMargin: false});
+  outputHttpEditor.getSession().setUseWrapMode(true);
   
   var outputBodyEditor = ace.edit("output-body-editor");
   outputBodyEditor.setTheme("ace/theme/monokai");
@@ -19,15 +22,21 @@ $(function() {
   outputBodyEditor.setOptions({maxLines: Infinity, showPrintMargin: false});
   outputBodyEditor.getSession().setUseWorker(false);
   outputBodyEditor.getSession().setMode("ace/mode/json");
+  outputBodyEditor.getSession().setUseWrapMode(true);
   
   $("#input-editor").resizable({
     handles: "e",
     autoHide: false,
     minWidth: 200,
     maxWidth: 1000,
-    resize: function(event, ui) {
+    stop: function(event, ui) {
       var outputEditor = $(this).next();
       outputEditor.css("left", $(this).outerWidth(true) + "px");
+      
+      [inputHttpEditor, inputBodyEditor, 
+       outputHttpEditor, outputBodyEditor].forEach(function(editor) {
+        editor.resize();
+      });
     }
   });
   
@@ -100,10 +109,12 @@ $(function() {
     var requestTarget = requestParser.exec(inputHttpLines[0]);
     
     var request = {
-      method: requestTarget[1],
+      method: requestTarget[1].toUpperCase(),
       url: (server.url + (server.url.endsWith("/") ? "": "/") + requestTarget[2].substring(1)),
       path_qs: requestTarget[2],
-      headers: {}
+      headers: {},
+      body: ["PUT", "PATCH", "POST"].indexOf(requestTarget[1].toUpperCase()) >= 0 ?
+            inputBodyEditor.getValue() : ""
     };
     var invalidHeaders = [];
     
@@ -132,7 +143,7 @@ $(function() {
       window.alert("Headers inválidos\n\n" + invalidHeaders.join("\n"));
     }
     
-    server.getSigningFunction(request, function(signingFunction) {
+    server.getSigningFunction(request, window.userInputService, function(signingFunction) {
       signingFunction.sign(request);
       server.send(request, function(response) {
         var responseHttpInfo = response.statusLine + "\n\n" + response.headers;
@@ -156,3 +167,33 @@ $(function() {
     });
   });
 });
+
+window.userInputService = {
+  getApiKeyCredentials: function(options, callback) {
+    var modal = $("[data-signature-method='" + options.kind + "']");
+    modal.modal();
+    modal.modal("show");
+    modal.find("[data-bind='server-url']").text(options.scopeUrlPrefix);
+    modal.find("input[name]").val("");
+    modal.find(".btn-primary").one("click", function() {
+      var credentials = {};
+      var errors = false;
+      
+      modal.find("input[name]").toArray().forEach(function(input) {
+        var name = $(input).attr("name");
+        var value = $.trim($(input).val());
+        
+        if (!value) {
+          errors = true;
+        }
+        credentials[name] = value;
+      });
+      
+      if (errors) {
+        window.alert("Todos os campos são de preenchimento obrigatório");
+      } else {
+        callback(credentials);
+      }
+    });
+  }
+};

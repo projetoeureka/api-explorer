@@ -30,10 +30,13 @@ function ServerList(serverList) {
   
   this.addServer = function(server) {
     this._servers.push(server);
+    return server;
+  };
+  
+  this.save = function() {
     chrome.storage.sync.set({"serverList": this._servers.map(function(server) {
       return server.toJson();
     })});
-    return server;
   };
   
   this.getServer = function(url) {
@@ -95,6 +98,9 @@ function Server(options) {
   var info = ServerList.identifyServer(options.url);
   
   this.url = options.url;
+  if (!this.url.endsWith("/")) {
+    this.url += "/";
+  }
   this.apiKeys = options.apiKeys || [];
   
   this.api = info.api;
@@ -104,10 +110,70 @@ function Server(options) {
     return {url: this.url, apiKeys: this.apiKeys};
   };
 
-  this.getSigningFunction = function(request, callback) {
-    callback({
-      sign: function(request) {}
+  this.getSigningFunction = function(request, userInputService, callback) {
+    if (this.api == "swag" && (
+      request.path_qs.startsWith("/api/v1") || request.path_qs.startsWith("/api/v2"))
+    ) {
+      return callback(NoSignature());
+    }
+    
+    if (this.signatureMethod == "geekie-sign-v1") {
+      return this.getApiKey({
+        kind: "geekie-sign-v1", 
+        scope: {},
+        scopeUrlPrefix: this.url + "*",
+        userInputService: userInputService,
+        callback: function(apiKey) {
+          callback(GeekieSignV1(apiKey));
+        }
+      });
+    }
+    else if (this.signatureMethod == "geekie-sign-v2") {
+      var organizationInfo = /^\/organizations\/(\d+)\//.exec(request.path_qs);
+      if (!organizationInfo) {
+        return callback(NoSignature());
+      }
+      
+      return this.getApiKey({
+        kind: "geekie-sign-v2", 
+        scope: {organization_id: organizationInfo[1]},
+        scopeUrlPrefix: this.url + "organizations/"+ organizationInfo[1] + "/*",
+        userInputService: userInputService,
+        callback: function(apiKey) {
+          callback(GeekieSignV1(apiKey));
+        }
+      });
+    }
+  };
+  
+  this.getApiKey = function(options) {
+    var matchingKeys = this.apiKeys.filter(function(apiKey) {
+      if (apiKey.kind != options.kind) {
+        return false;
+      } 
+      for (var key in Object.keys(options.scope)) {
+        if (apiKey.scope[key] != options.scope[key]) {
+          return false;
+        }
+      }
+      return true;
     });
+    
+    if (matchingKeys.length) {
+      return options.callback(matchingKeys[0]);
+    }
+    
+    options.userInputService.getApiKeyCredentials(options, function(credentials) {
+      var apiKey = {
+        kind: options.kind,
+        scope: options.scope,
+        credentials: credentials
+      };
+  
+      this.apiKeys.push(apiKey);
+      window.serverList.save();
+      options.callback(apiKey);    
+    }.bind(this));
   };
   
   this.send = function(request, callback) {
