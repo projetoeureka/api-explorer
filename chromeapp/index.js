@@ -1,19 +1,40 @@
 function main(storageInfo) {
   var inputHttpEditor = ace.edit("input-http-editor");
   inputHttpEditor.setTheme("ace/theme/chrome");
-  inputHttpEditor.setOptions({maxLines: 20});
+  inputHttpEditor.setOptions({
+    maxLines: 100, 
+    highlightActiveLine: false,
+    highlightGutterLine: false,
+    showPrintMargin: false
+  });
   inputHttpEditor.getSession().setUseWrapMode(true);
+
+  var inputAutoHeadersEditor = ace.edit("input-auto-headers");
+  inputAutoHeadersEditor.setTheme("ace/theme/chrome");
+  inputAutoHeadersEditor.setOptions({
+    maxLines: 100, 
+    highlightActiveLine: false,
+    highlightGutterLine: false,
+    showPrintMargin: false
+  });
+  inputAutoHeadersEditor.setReadOnly(true);
+  inputAutoHeadersEditor.getSession().setUseWrapMode(true);
 
   var inputBodyEditor = ace.edit("input-body-editor");
   inputBodyEditor.setTheme("ace/theme/chrome");
-  inputBodyEditor.setOptions({maxLines: 1000});
+  inputBodyEditor.setOptions({maxLines: 10000});
   inputBodyEditor.getSession().setMode("ace/mode/json");
   inputBodyEditor.getSession().setUseWrapMode(true);
   
   var outputHttpEditor = ace.edit("output-http-editor");
   outputHttpEditor.setTheme("ace/theme/monokai");
   outputHttpEditor.setReadOnly(true);
-  outputHttpEditor.setOptions({maxLines: 20, showPrintMargin: false});
+  outputHttpEditor.setOptions({
+    maxLines: 100, 
+    highlightActiveLine: false,
+    highlightGutterLine: false,
+    showPrintMargin: false
+  });
   outputHttpEditor.getSession().setUseWrapMode(true);
   
   var outputBodyEditor = ace.edit("output-body-editor");
@@ -24,7 +45,12 @@ function main(storageInfo) {
   outputBodyEditor.getSession().setMode("ace/mode/json");
   outputBodyEditor.getSession().setUseWrapMode(true);
   
-  var editors = [inputHttpEditor, inputBodyEditor, outputHttpEditor, outputBodyEditor];
+  var editors = [inputHttpEditor, inputAutoHeadersEditor, inputBodyEditor, 
+                 outputHttpEditor, outputBodyEditor];
+  
+  editors.forEach(function disableAnnoyingWarnings(editor) {
+    editor.$blockScrolling = Infinity;
+  });
   
   editors.forEach(function(editor) {
     editor.on("change", function saveServerState() {
@@ -34,7 +60,8 @@ function main(storageInfo) {
           inputHttpEditor: inputHttpEditor.getValue(),
           inputBodyEditor: inputBodyEditor.getValue(),
           outputHttpEditor: outputHttpEditor.getValue(),
-          outputBodyEditor: outputBodyEditor.getValue()
+          outputBodyEditor: outputBodyEditor.getValue(),
+          inputAutoHeadersEditor: inputAutoHeadersEditor.getValue()
         };
         storageInfo[serverSelect.getValue()] = info[serverSelect.getValue()];
         chrome.storage.local.set(info);
@@ -105,12 +132,14 @@ function main(storageInfo) {
         
         var serverState = storageInfo[value] || {
           inputHttpEditor: "GET /path/to/endpoint\n\nAccept: */*",
+          inputAutoHeadersEditor: "",
           inputBodyEditor: "{}",
           outputHttpEditor: "",
           outputBodyEditor: ""
         };
         
         inputHttpEditor.setValue(serverState.inputHttpEditor, -1);
+        inputAutoHeadersEditor.setValue(serverState.inputAutoHeadersEditor, -1);
         inputBodyEditor.setValue(serverState.inputBodyEditor, -1);
         outputHttpEditor.setValue(serverState.outputHttpEditor, -1);
         outputBodyEditor.setValue(serverState.outputBodyEditor, -1);
@@ -201,6 +230,7 @@ function main(storageInfo) {
           }
           return body;
         };
+        
         outputHttpEditor.setValue(responseHttpInfo, -1);
         try {
           var json = JSON.parse(response.body);
@@ -208,6 +238,11 @@ function main(storageInfo) {
         } catch(e) {
           outputBodyEditor.setValue(limitLines(response.body), -1);
         }
+        
+        var autoHeaders = Object.keys(request.autoHeaders).map(function(key) {
+          return key + ": " + request.autoHeaders[key];
+        }).join("\n");
+        inputAutoHeadersEditor.setValue(autoHeaders, -1);
         
         if (response.statusLine.indexOf("403") >= 0) {
           $(".btn.forget-credentials").show()

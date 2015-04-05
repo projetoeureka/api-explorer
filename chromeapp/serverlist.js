@@ -222,6 +222,26 @@ function Server(options) {
   };
   
   this.send = function(request, callback) {
+    
+    // set default content-type
+    var isJson = false;
+    try {
+      JSON.parse(request.body);
+      isJson = true;
+    } catch(e) {}
+    
+    var hasContentHeaderSet = false;
+    Object.keys(request.headers).forEach(function(headerName) {
+      if (headerName.toLowerCase() == "content-type") {
+        hasContentHeaderSet = true;
+      }
+    });
+    
+    if (isJson && !hasContentHeaderSet) {
+      request.headers["Content-Type"] = "application/json";
+      request.autoHeaders["Content-Type"] = "application/json";
+    }
+    
     $.ajax({
       type: request.method,
       headers: request.headers,

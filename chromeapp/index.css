@@ -37,7 +37,8 @@
 }
 
 #input-editor #input-http-editor .ace_gutter .ace_gutter-cell,
-#output-editor #output-http-editor .ace_gutter .ace_gutter-cell{
+#input-editor #input-auto-headers .ace_gutter .ace_gutter-cell,
+#output-editor #output-http-editor .ace_gutter .ace_gutter-cell {
   color: transparent;
 }
 
@@ -54,12 +55,17 @@
   margin: -1px 0 0 0;
 }
 
+#input-editor #input-auto-headers {
+  color: #aaa;
+}
+
 #input-editor .body-label {
   font-family: Monaco, Menlo, 'Ubuntu Mono', Consolas, source-code-pro, monospace;
   padding-top: 1em;
   padding-bottom: 1em;
   font-size: 12px;
-  color: gray;
+  font-weight: bold;
+  color: #600;
   border-left: #eee solid 41px;
   padding-left: 5px;
 }
