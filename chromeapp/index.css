@@ -20,7 +20,7 @@
 #endpoint-selection .selectize-container {
   position: absolute;
   left: 50px;
-  right: 40px;
+  right: 80px;
 }
 
 #endpoint-selection .selectize-container .selectize-control .selectize-input {
@@ -41,6 +41,12 @@
 #endpoint-selection .btn.send-request {
   border-top-left-radius: 0px;
   border-bottom-left-radius: 0px;
+  height: 36px;
+  line-height: 24px;
+}
+
+#endpoint-selection .btn.show-history {
+  border-radius: 0;
   height: 36px;
   line-height: 24px;
 }

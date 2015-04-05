@@ -109,6 +109,7 @@ function main(storageInfo) {
     valueField: "url",
     labelField: "url",
     searchField: "url",
+    sortField: [{field: "timestamp", direction: "desc"}, {field: "path_qs", direction: "asc"}],
     load: function(query, callback) {
       this.clearOptions();
       
@@ -116,7 +117,20 @@ function main(storageInfo) {
         callback();
       }
       var server = window.serverList.getServer(window.serverSelect.getValue());
-      return callback(server.getEndpoints(query));
+      if (this.historyMode) {
+        return callback(server.requestHistory.map(function(item) {
+          item = $.extend({}, item);
+          item.path_qs = item.url.split(" ").slice(1).join(" ");
+          item.url = item.method + " " + item.url + ";t=" + item.timestamp;
+          return item;
+        }));
+      }
+      return callback(server.getEndpoints(query).map(function(item) {
+        item = $.extend({}, item);
+        item.path_qs = item.url.split(" ").slice(1).join(" ");
+        item.timestamp = 0; // not history mode
+        return item;
+      }));
     },
     createFilter: function(url) {
       return url.match(/^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) (\/.*)$/i);
@@ -134,12 +148,18 @@ function main(storageInfo) {
         return "<div class='noneditable-input'>" + escape(item.url) + "</div>";
       },
       option: function(item, escape) {
+        var url = item.url;
+        if (url.indexOf(";t=") >= 0) {
+          url = url.substring(0, url.lastIndexOf(";t="));
+        }
         return "<div class='endpoint-option'><div class='endpoint-url'>" + 
-          "<span class='method'>" + item.url.split(" ")[0] + "</span> " +
-          "<span class='url'>" + escape(item.url.split(" ").slice(1).join(" ")) + "</span>" +
+          "<span class='method'>" + url.split(" ")[0] + "</span> " +
+          "<span class='url'>" + escape(url.split(" ").slice(1).join(" ")) + "</span>" +
           "</div>" +
-          "<div class='endpoint-description'>" + escape(
-            item.description || "(do histórico)"
+          "<div class='endpoint-description'>" + (
+            item.description ? escape(item.description) : (
+              item.timestamp ? new Date(item.timestamp).toString() : "(do histórico)"
+            )
           ) + "</div></div>";
       },
     },
@@ -149,13 +169,23 @@ function main(storageInfo) {
         return;
       }
       
-      setURL(url);
+      if (url.indexOf(";t=") >= 0) {
+        setURL(url.substring(0, url.lastIndexOf(";t=")));
+        var historyEntry = this.options[url];
+        inputHttpEditor.setValue(Object.keys(historyEntry.headers).map(function(key) {
+          return key + ": " + historyEntry.headers[key];
+        }).join("\n"), -1);
+        inputBodyEditor.setValue(historyEntry.body, -1);
+      } else {
+        setURL(url);
+      }
     },
     onDropdownOpen: function() {
       $(".selectize-container .noneditable-input").show();
       $(".selectize-container .editable-input").hide();
     },
     onDropdownClose: function() {
+      this.historyMode = false;
       $(".selectize-container .noneditable-input").hide();
       $(".selectize-container .editable-input").show();
     }
@@ -193,6 +223,12 @@ function main(storageInfo) {
       saveServerState();
     }
   }
+
+  $(".btn.show-history").on("click", function() {
+    var selectize = $("#endpoint")[0].selectize;
+    selectize.historyMode = true;
+    selectize.focus();
+  });
 
   window.serverList.whenServerListAvailable(function(serverList) {
     var $select = $("#server-host").selectize({
