@@ -47,3 +47,27 @@ function GeekieSignV2(apiKey) {
     }
   };
 }
+
+function beginLoggedUserAuth(apiKey, callback) {
+  chrome.cookies.getAll({url: apiKey.credentials["domain"], name: "session"}, function(cookies) {
+    callback({
+      sign: function(request) {
+        if (!cookies) {
+          window.alert(
+            "Cookie não encontrada para url='" + apiKey.credentials["domain"] + "' name='session'"
+          );
+        }
+        
+        var cookie = cookies[0];
+        var accessToken = pickle.loads(atob(cookie.value.slice(40)))[2].access_token;
+        
+        var signatureHeaders = {
+          "Authorization": "Bearer: " + accessToken
+        };
+        
+        $.extend(request.headers, signatureHeaders);
+        $.extend(request.autoHeaders, signatureHeaders);
+      }
+    });
+  });
+}

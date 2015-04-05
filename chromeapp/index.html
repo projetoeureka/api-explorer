@@ -18,6 +18,7 @@
     <script src="serverlist.js" type="text/javascript"></script>
     <script src="index.js" type="text/javascript"></script>
     <script src="signfunctions.js" type="text/javascript"></script>
+    <script src="pickle.js" type="text/javascript"></script>
   </head>
   <body>
     <nav class="navbar navbar-default navbar-static-top">
@@ -110,6 +111,37 @@
               <div class="form-group">
                 <label>Chave da API</label>
                 <input type="text" class="form-control" name="api_key">
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" data-signature-method="logged-user">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            <h4 class="modal-title">Dados de autenticação necessários para esse request</h4>
+          </div>
+          <div class="modal-body">
+            <p><strong>URL</strong>: <code data-bind="server-url"></code></p>
+            <form>
+              <div class="form-group">
+                <label>Domínio do Cookie</label>
+                <input type="text" class="form-control" name="domain">
+                <p class="help-block">
+                  No momento suportamos apenas cookies do learn 
+                  (https://alunos.geekielab.com.br/ ou equivalente).
+                  Favor incluir schema e domínio
+                </p>
               </div>
             </form>
           </div>

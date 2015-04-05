@@ -17,7 +17,6 @@ function main(storageInfo) {
     highlightGutterLine: false,
     showPrintMargin: false
   });
-  inputAutoHeadersEditor.setReadOnly(true);
   inputAutoHeadersEditor.getSession().setUseWrapMode(true);
 
   var inputBodyEditor = ace.edit("input-body-editor");
@@ -28,7 +27,6 @@ function main(storageInfo) {
   
   var outputHttpEditor = ace.edit("output-http-editor");
   outputHttpEditor.setTheme("ace/theme/monokai");
-  outputHttpEditor.setReadOnly(true);
   outputHttpEditor.setOptions({
     maxLines: 100, 
     highlightActiveLine: false,
@@ -39,17 +37,16 @@ function main(storageInfo) {
   
   var outputBodyEditor = ace.edit("output-body-editor");
   outputBodyEditor.setTheme("ace/theme/monokai");
-  outputBodyEditor.setReadOnly(true);
   outputBodyEditor.setOptions({maxLines: Infinity, showPrintMargin: false});
-  outputBodyEditor.getSession().setUseWorker(false);
   outputBodyEditor.getSession().setMode("ace/mode/json");
   outputBodyEditor.getSession().setUseWrapMode(true);
   
   var editors = [inputHttpEditor, inputAutoHeadersEditor, inputBodyEditor, 
                  outputHttpEditor, outputBodyEditor];
   
-  editors.forEach(function disableAnnoyingWarnings(editor) {
+  editors.forEach(function applyGlobalConfig(editor) {
     editor.$blockScrolling = Infinity;
+    editor.renderer.setShowGutter(false);
   });
   
   editors.forEach(function(editor) {
@@ -62,6 +59,13 @@ function main(storageInfo) {
         inputAutoHeadersEditor.setValue("");
       }
     });
+  });
+  
+  [inputAutoHeadersEditor, outputHttpEditor, outputBodyEditor].forEach(function(editor) {
+    editor.setReadOnly(true);
+    editor.getSession().setUseWorker(false);
+    editor.textInput.getElement().tabIndex = -1;
+    editor.renderer.$cursorLayer.element.style.opacity = 0;
   });
   
   function saveServerState() {
@@ -165,6 +169,11 @@ function main(storageInfo) {
     }
 
     setURL(url);
+  }).on("keydown", function(e) {
+    if (e.which == 13 /* ENTER */) {
+      $(this).trigger("blur");
+      return false;
+    }
   });
   
   function setURL(url) {
@@ -320,6 +329,9 @@ function main(storageInfo) {
   });
   
   var sendRequest = function(server, request) {
+    outputHttpEditor.setValue("Aguarde...", -1);
+    outputBodyEditor.setValue("", -1);
+    
     server.getSigningFunction(request, window.userInputService, function(signingFunction) {
       signingFunction.sign(request);
       server.send(request, function(response) {
@@ -347,17 +359,13 @@ function main(storageInfo) {
         }).join("\n");
         inputAutoHeadersEditor.setValue(autoHeaders, -1);
         
-        if (response.statusLine.indexOf("403") >= 0) {
-          $(".btn.forget-credentials").show()
-                                      .off("click")
-                                      .one("click", function() {
-                                        server.eraseAuthInfo(request);
-                                        $(".btn.forget-credentials").hide();
-                                        sendRequest(server, request);
-                                      });
-        } else {
-          $(".btn.forget-credentials").hide();
-        }
+        $(".btn.forget-credentials").show()
+                                    .off("click")
+                                    .one("click", function() {
+                                      server.eraseAuthInfo(request);
+                                      $(".btn.forget-credentials").hide();
+                                      sendRequest(server, request);
+                                    });
       });
     });
   };

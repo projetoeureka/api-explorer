@@ -114,7 +114,15 @@ function Server(options) {
     if (this.api == "swag" && (
       request.path_qs.startsWith("/api/v1") || request.path_qs.startsWith("/api/v2"))
     ) {
-      return callback(NoSignature());
+      return this.getApiKey({
+        "kind": "logged-user",
+        scope: {},
+        scopeUrlPrefix: this.url + "*",
+        userInputService: userInputService,
+        callback: function(apiKey) {
+          beginLoggedUserAuth(apiKey, callback);
+        }
+      });
     }
     
     if (this.signatureMethod == "geekie-sign-v1") {
