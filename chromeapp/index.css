@@ -1,0 +1,54 @@
+#editor-panes {
+  position: absolute;
+  top: 58px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+#editor-panes > .editor-pane {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+#input-editor {
+  left: 0;
+  width: 33.3333%;
+}
+
+#output-editor {
+  left: 33.33333%;
+  right: 0;
+  background-color: #272822;
+}
+
+.ui-resizable-e {
+  cursor: ew-resize;
+  width: 10px;
+  right: -5px;
+  top: 0;
+  bottom: 0;
+  background-color: gray;
+  position: absolute;
+  z-index: 50 !important;
+}
+
+#input-editor #input-http-editor .ace_gutter .ace_gutter-cell,
+#output-editor #output-http-editor .ace_gutter .ace_gutter-cell{
+  color: transparent;
+}
+
+.body-label {
+  font-family: Monaco, Menlo, 'Ubuntu Mono', Consolas, source-code-pro, monospace;
+  padding-top: 1em;
+  padding-bottom: 1em;
+  font-size: 12px;
+  color: gray;
+  border-left: #eee solid 41px;
+  padding-left: 5px;
+}
+
+#output-editor #output-body-editor {
+  margin-top: 1em;
+}
