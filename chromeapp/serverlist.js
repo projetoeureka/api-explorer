@@ -176,11 +176,14 @@ function Server(options) {
   };
   
   this.matchingApiKey = function(options) {
+    console.log(options);
     var matchingKeys = this.apiKeys.filter(function(apiKey) {
+      console.log("match kind=" + options.kind);
       if (apiKey.kind != options.kind) {
         return false;
       } 
-      for (var key in Object.keys(options.scope)) {
+      for (var key in options.scope) {
+        console.log("match scope" + key + "=" + options.scope[key]);
         if (apiKey.scope[key] != options.scope[key]) {
           return false;
         }
