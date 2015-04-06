@@ -1,7 +1,7 @@
 {
   "name": "Geekie API Explorer",
   "description": "Chrome App for easily interacting with Geekie APIs",
-  "version": "0.1.0.0",
+  "version": "0.1.0.1",
   "manifest_version": 2,
   "app": {
     "background": {
